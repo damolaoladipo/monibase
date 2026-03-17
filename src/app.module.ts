@@ -2,8 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
+import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmailModule } from './modules/email/email.module';
 import { WalletModule } from './modules/wallet/wallet.module';
@@ -35,6 +37,7 @@ import { AppController } from './app.controller';
       }),
       inject: [ConfigService],
     }),
+    CommonModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
@@ -48,6 +51,18 @@ import { AppController } from './app.controller';
       inject: [ConfigService],
     }),
     BullModule.registerQueue({ name: 'email' }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 60000,
+        limit: 10,
+      },
+      {
+        name: 'medium',
+        ttl: 60000,
+        limit: 30,
+      },
+    ]),
     EmailModule,
     AuthModule,
     WalletModule,
@@ -59,6 +74,10 @@ import { AppController } from './app.controller';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

@@ -5,6 +5,7 @@ import { User } from '../user/entities/user.entity';
 import { OtpType } from '../user/entities/user.entity';
 import { TokenService } from './token.service';
 import { EmailJobService } from '../email/email-job.service';
+import { AuditLoggerService } from '../../common/services/audit-logger.service';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 const OTP_LENGTH = 6;
@@ -16,6 +17,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
     private readonly emailJobService: EmailJobService,
+    private readonly audit: AuditLoggerService,
   ) {}
 
   generateOtp(): string {
@@ -47,6 +49,7 @@ export class AuthService {
       otp,
       type: OtpType.EMAIL_VERIFICATION,
     }).catch(() => {});
+    this.audit.log({ userId: user.id, action: 'register', resource: 'auth', outcome: 'success' });
     return { message: 'Check email for OTP' };
   }
 
@@ -72,11 +75,13 @@ export class AuthService {
       isActivated: true,
       isActive: true,
     });
+    this.audit.log({ userId: user.id, action: 'verify_otp', resource: 'auth', outcome: 'success' });
     return { message: 'Account verified' };
   }
 
   async login(user: User): Promise<{ token: string; user: JwtPayload }> {
     await this.userService.update(user.id, { lastLogin: new Date() });
+    this.audit.log({ userId: user.id, action: 'login', resource: 'auth', outcome: 'success' });
     const token = this.tokenService.sign({
       id: user.id,
       email: user.email,
@@ -100,6 +105,7 @@ export class AuthService {
     const user = await this.userService.findById(userId);
     if (user) {
       await this.userService.update(userId, { tokenVersion: user.tokenVersion + 1 });
+      this.audit.log({ userId, action: 'logout', resource: 'auth', outcome: 'success' });
     }
     return { message: 'Logged out' };
   }
