@@ -1,0 +1,52 @@
+# Cursor (project-specific; do not commit)
+.cursor/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+
+# Logs and runtime
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test and coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Optional caches
+.npm
+.eslintcache
+*.tsbuildinfo
+
+# TypeORM and migrations (optional: uncomment if you keep generated migrations local)
+# /src/database/migrations/*.js
+
+# Temporary and upload (if any)
+tmp/
+temp/
+uploads/
