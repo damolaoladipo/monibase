@@ -4,6 +4,7 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import { OtpType } from '../user/entities/user.entity';
 import { TokenService } from './token.service';
+import { EmailJobService } from '../email/email-job.service';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 const OTP_LENGTH = 6;
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
+    private readonly emailJobService: EmailJobService,
   ) {}
 
   generateOtp(): string {
@@ -40,6 +42,11 @@ export class AuthService {
       otpExpiry: expiry,
       otpType: OtpType.EMAIL_VERIFICATION,
     });
+    this.emailJobService.enqueueSendOtp({
+      email: user.email,
+      otp,
+      type: OtpType.EMAIL_VERIFICATION,
+    }).catch(() => {});
     return { message: 'Check email for OTP' };
   }
 
