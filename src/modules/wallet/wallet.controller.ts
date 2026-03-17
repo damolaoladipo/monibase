@@ -2,7 +2,10 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { EmailVerifiedGuard } from '../../common/guards/email-verified.guard';
+import { KycVerifiedGuard } from '../../common/guards/kyc-verified.guard';
+import { ConvertDto } from './dto/convert.dto';
 import { FundWalletDto } from './dto/fund-wallet.dto';
+import { TradeDto } from './dto/trade.dto';
 import { WalletService } from './wallet.service';
 
 @Controller('wallet')
@@ -20,6 +23,30 @@ export class WalletController {
     return this.walletService.fund(
       user.id,
       dto.currency,
+      dto.amount,
+      dto.idempotencyKey,
+    );
+  }
+
+  @Post('convert')
+  @UseGuards(KycVerifiedGuard)
+  async convert(@CurrentUser() user: JwtPayload, @Body() dto: ConvertDto) {
+    return this.walletService.convert(
+      user.id,
+      dto.sourceCurrency,
+      dto.targetCurrency,
+      dto.amount,
+      dto.idempotencyKey,
+    );
+  }
+
+  @Post('trade')
+  @UseGuards(KycVerifiedGuard)
+  async trade(@CurrentUser() user: JwtPayload, @Body() dto: TradeDto) {
+    return this.walletService.trade(
+      user.id,
+      dto.sourceCurrency,
+      dto.targetCurrency,
       dto.amount,
       dto.idempotencyKey,
     );

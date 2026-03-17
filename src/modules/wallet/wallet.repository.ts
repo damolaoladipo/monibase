@@ -48,6 +48,20 @@ export class WalletRepository {
     return repo.save(balance);
   }
 
+  async debitBalance(userId: string, currencyCode: string, amount: string, manager: EntityManager): Promise<WalletBalance> {
+    const balance = await this.findBalanceForUpdate(userId, currencyCode, manager);
+    if (!balance) {
+      throw new Error('Insufficient balance');
+    }
+    const current = parseFloat(balance.amount);
+    const debit = parseFloat(amount);
+    if (current < debit) {
+      throw new Error('Insufficient balance');
+    }
+    balance.amount = (current - debit).toFixed(4);
+    return manager.getRepository(WalletBalance).save(balance);
+  }
+
   async createTransaction(data: Partial<Transaction>, manager?: EntityManager): Promise<Transaction> {
     const repo = manager ? manager.getRepository(Transaction) : this.transactionRepo;
     const tx = repo.create(data);
