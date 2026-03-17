@@ -23,12 +23,16 @@ Backend for an FX Trading App: users can register, verify email, fund wallets, a
 
 4. **Database**: With `synchronize: true` in development, the app creates tables on startup. For production, use migrations (see TypeORM docs).
 
-5. **Run**:
+5. **Superadmin seeding**: On startup, if `RUN_SEED` is not `false` and no admin/super-admin user exists, a super-admin is created using `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`, and optionally `SUPERADMIN_FIRST_NAME`, `SUPERADMIN_LAST_NAME`. Set these in `.env` when you want the first admin; set `RUN_SEED=false` to disable.
+
+6. **Run**:
    ```bash
    npm run start:dev
    ```
 
-6. **API docs**: Open [http://localhost:3000/api](http://localhost:3000/api) for Swagger UI.
+7. **API docs**: Open [http://localhost:3000/api](http://localhost:3000/api) for Swagger UI.
+
+**Config**: DB, app, and Redis are configured via `src/config` (db.config, app.config, redis.config); env validation is in `env.validation.ts`.
 
 ## Key assumptions
 

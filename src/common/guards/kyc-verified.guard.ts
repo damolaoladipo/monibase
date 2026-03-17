@@ -5,10 +5,9 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { isAdminRole } from '../../config/roles.config';
 import { KycService } from '../../modules/kyc/kyc.service';
 import { JwtPayload } from '../decorators/current-user.decorator';
-
-const ADMIN_ROLE = 'admin';
 
 @Injectable()
 export class KycVerifiedGuard implements CanActivate {
@@ -20,7 +19,7 @@ export class KycVerifiedGuard implements CanActivate {
     if (!user) {
       throw new UnauthorizedException('Unauthorized');
     }
-    if (user.role === ADMIN_ROLE) {
+    if (isAdminRole(user.role)) {
       return true;
     }
     const verified = await this.kycService.isVerified(user.id);

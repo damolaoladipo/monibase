@@ -29,4 +29,12 @@ export const envValidationSchema = Joi.object({
   REDIS_DB: Joi.number().default(0),
 
   APP_URL: Joi.string().uri().optional(),
+
+  STORAGE_LOCAL_PATH: Joi.string().optional(),
+
+  RUN_SEED: Joi.string().valid('true', 'false').optional(),
+  SUPERADMIN_EMAIL: Joi.string().email().optional(),
+  SUPERADMIN_PASSWORD: Joi.string().min(8).optional(),
+  SUPERADMIN_FIRST_NAME: Joi.string().optional(),
+  SUPERADMIN_LAST_NAME: Joi.string().optional(),
 });

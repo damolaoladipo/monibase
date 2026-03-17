@@ -1,17 +1,21 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { BullModule } from './modules/bull/bull.module';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
+import { getDbConfig, getTypeOrmOptionsFromDbConfig } from './config/db.config';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmailModule } from './modules/email/email.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { FxModule } from './modules/fx/fx.module';
 import { KycModule } from './modules/kyc/kyc.module';
+import { StorageModule } from './modules/storage/storage.module';
+import { TasksModule } from './tasks/tasks.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { DeviceDetectionMiddleware } from './common/middleware/device-detection.middleware';
 import { AppController } from './app.controller';
 
 @Module({
@@ -23,34 +27,18 @@ import { AppController } from './app.controller';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST'),
-        port: parseInt(config.get<string>('DB_PORT') ?? '5432', 10),
-        username: config.get<string>('DB_USERNAME'),
-        password: config.get<string>('DB_PASSWORD'),
-        database: config.get<string>('DB_DATABASE'),
-        autoLoadEntities: true,
-        synchronize: config.get<string>('NODE_ENV') === 'development',
-        migrations: [],
-        migrationsRun: false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const db = getDbConfig(config);
+        return {
+          ...getTypeOrmOptionsFromDbConfig(db),
+          autoLoadEntities: true,
+          synchronize: config.get<string>('NODE_ENV') === 'development',
+        };
+      },
       inject: [ConfigService],
     }),
     CommonModule,
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          host: config.get<string>('REDIS_HOST', 'localhost'),
-          port: config.get<number>('REDIS_PORT', 6379),
-          password: config.get<string>('REDIS_PASSWORD') || undefined,
-          db: config.get<number>('REDIS_DB', 0),
-        },
-      }),
-      inject: [ConfigService],
-    }),
-    BullModule.registerQueue({ name: 'email' }),
+    BullModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -64,10 +52,12 @@ import { AppController } from './app.controller';
       },
     ]),
     EmailModule,
+    TasksModule,
     AuthModule,
     WalletModule,
     FxModule,
     KycModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [
@@ -81,4 +71,10 @@ import { AppController } from './app.controller';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(DeviceDetectionMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

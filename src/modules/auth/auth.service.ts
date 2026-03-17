@@ -10,6 +10,13 @@ import { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 15;
+const LOCK_DURATION_MS = 30 * 60 * 1000;
+const MAX_LOGIN_ATTEMPTS = 5;
+
+/** Email regex (troott-api checkEmail pattern). */
+const EMAIL_REGEX = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+/** Password: 8+ chars, 1 upper, 1 lower, 1 digit, 1 special (troott-api checkPassword pattern). */
+const PASSWORD_REGEX = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[^\w\s]).{8,}$/;
 
 @Injectable()
 export class AuthService {
@@ -19,6 +26,69 @@ export class AuthService {
     private readonly emailJobService: EmailJobService,
     private readonly audit: AuditLoggerService,
   ) {}
+
+  /** Validates email format (troott-api checkEmail). */
+  checkEmail(email: string): boolean {
+    return EMAIL_REGEX.test(email ?? '');
+  }
+
+  /** Validates password strength (troott-api checkPassword). */
+  checkPassword(password: string): boolean {
+    return PASSWORD_REGEX.test(password ?? '');
+  }
+
+  /** Activate account and clear lock (troott-api activateAccount). */
+  async activateAccount(user: User): Promise<void> {
+    await this.userService.update(user.id, {
+      isActivated: true,
+      isActive: true,
+      isLocked: false,
+      loginLimit: 0,
+      lockedUntil: null,
+    });
+  }
+
+  /** Deactivate account (troott-api deactivateAccount). */
+  async deactivateAccount(user: User): Promise<void> {
+    await this.userService.update(user.id, {
+      isActive: false,
+      isActivated: false,
+      isLocked: true,
+      lockedUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    });
+  }
+
+  /** Returns true if user is currently locked (troott-api checkLockedStatus). Unlocks if lock expiry has passed. */
+  async checkLockedStatus(user: User): Promise<boolean> {
+    if (!user.isLocked || !user.lockedUntil) return false;
+    if (new Date() > user.lockedUntil) {
+      await this.userService.update(user.id, {
+        isLocked: false,
+        lockedUntil: null,
+        loginLimit: 0,
+      });
+      return false;
+    }
+    return true;
+  }
+
+  /** Increment login attempts and lock account after MAX_LOGIN_ATTEMPTS (troott-api increaseLoginLimit). */
+  async increaseLoginLimit(user: User): Promise<number> {
+    const next = (user.loginLimit ?? 0) + 1;
+    const updates: Partial<User> = {
+      loginLimit: next,
+      ...(next >= MAX_LOGIN_ATTEMPTS
+        ? { isLocked: true, lockedUntil: new Date(Date.now() + LOCK_DURATION_MS) }
+        : {}),
+    };
+    await this.userService.update(user.id, updates);
+    return next;
+  }
+
+  /** Update last login timestamp (troott-api updateLastLogin). */
+  async updateLastLogin(user: User): Promise<void> {
+    await this.userService.update(user.id, { lastLogin: new Date() });
+  }
 
   generateOtp(): string {
     return randomBytes(OTP_LENGTH).toString('hex').slice(0, OTP_LENGTH).toUpperCase();
@@ -80,7 +150,7 @@ export class AuthService {
   }
 
   async login(user: User): Promise<{ token: string; user: JwtPayload }> {
-    await this.userService.update(user.id, { lastLogin: new Date() });
+    await this.updateLastLogin(user);
     this.audit.log({ userId: user.id, action: 'login', resource: 'auth', outcome: 'success' });
     const token = this.tokenService.sign({
       id: user.id,

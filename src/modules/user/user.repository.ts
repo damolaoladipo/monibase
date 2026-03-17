@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -49,5 +49,10 @@ export class UserRepository {
     const updated = await this.findById(id);
     if (!updated) throw new Error('User not found after update');
     return updated;
+  }
+
+  async countByRoles(roles: string[]): Promise<number> {
+    if (roles.length === 0) return 0;
+    return this.repo.count({ where: { role: In(roles) } });
   }
 }

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-
-export const SEND_OTP_JOB = 'send-otp';
+import { ConfigService } from '@nestjs/config';
+import { BullQueueService } from '../bull/bull-queue.service';
+import { EMAIL_QUEUE_NAME, JobName } from './email-queue.constants';
+import { User } from '../user/entities/user.entity';
 
 export interface SendOtpPayload {
   email: string;
@@ -10,17 +10,78 @@ export interface SendOtpPayload {
   type: string;
 }
 
+export interface SendMailPayload {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}
+
 @Injectable()
 export class EmailJobService {
   constructor(
-    @InjectQueue('email')
-    private readonly queue: Queue,
+    private readonly bullQueue: BullQueueService,
+    private readonly config: ConfigService,
   ) {}
 
-  async enqueueSendOtp(payload: SendOtpPayload): Promise<void> {
-    await this.queue.add(SEND_OTP_JOB, payload, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
+  /**
+   * Enqueue send-otp job (troott-api addJob pattern). Uses reusable Bull queue.
+   */
+  async enqueueSendOtp(payload: SendOtpPayload): Promise<{ jobId: string }> {
+    return this.bullQueue.addJob({
+      queueName: EMAIL_QUEUE_NAME,
+      jobName: JobName.SendOtp,
+      data: payload as unknown as Record<string, unknown>,
+    });
+  }
+
+  /**
+   * Enqueue a generic send-mail job (troott-api queueEmailJob pattern).
+   */
+  async enqueueSendMail(payload: SendMailPayload): Promise<{ jobId: string }> {
+    return this.bullQueue.addJob({
+      queueName: EMAIL_QUEUE_NAME,
+      jobName: JobName.SendMail,
+      data: payload as unknown as Record<string, unknown>,
+    });
+  }
+
+  /** Enqueue welcome email (troott-api sendUserWelcomeEmail). */
+  async enqueueWelcome(user: User): Promise<{ jobId: string }> {
+    const appUrl = this.config.get<string>('APP_URL', 'http://localhost:3000');
+    const subject = `Welcome, ${user.firstName || 'User'}!`;
+    const text = `Welcome. You can sign in at ${appUrl}.`;
+    const html = `<!DOCTYPE html><html><body><p>Welcome${user.firstName ? `, ${user.firstName}` : ''}.</p><p>You can sign in at <a href="${appUrl}">${appUrl}</a>.</p></body></html>`;
+    return this.enqueueSendMail({
+      to: user.email,
+      subject,
+      text,
+      html,
+    });
+  }
+
+  /** Enqueue password reset notification (troott-api sendPasswordResetNotificationEmail). */
+  async enqueuePasswordResetNotification(user: User): Promise<{ jobId: string }> {
+    const appUrl = this.config.get<string>('APP_URL', 'http://localhost:3000');
+    const subject = 'Reset your password';
+    const text = `Hi ${user.firstName || 'User'}, we received a request to reset your password. If this wasn't you, ignore this email. Reset at ${appUrl}.`;
+    const html = `<!DOCTYPE html><html><body><p>Hi ${user.firstName || 'User'},</p><p>We received a request to reset your password.</p><p>If this wasn't you, ignore this email.</p><p><a href="${appUrl}">Reset password</a></p></body></html>`;
+    return this.enqueueSendMail({
+      to: user.email,
+      subject,
+      text,
+      html,
+    });
+  }
+
+  /** Enqueue password change confirmation (troott-api sendPasswordChangeNotificationEmail). */
+  async enqueuePasswordChangeNotification(user: User): Promise<{ jobId: string }> {
+    const subject = 'Your password has been changed';
+    const text = `Hi ${user.firstName || 'User'}, this confirms your password was changed. If this wasn't you, contact support.`;
+    return this.enqueueSendMail({
+      to: user.email,
+      subject,
+      text,
     });
   }
 }
