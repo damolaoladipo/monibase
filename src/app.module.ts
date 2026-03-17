@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { FxModule } from './modules/fx/fx.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AppController } from './app.controller';
 
@@ -33,6 +34,7 @@ import { AppController } from './app.controller';
     }),
     AuthModule,
     WalletModule,
+    FxModule,
   ],
   controllers: [AppController],
   providers: [
