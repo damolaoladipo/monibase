@@ -1,7 +1,71 @@
 # Monibase FX Trading App
 
-Backend for an FX Trading App (NestJS, TypeORM, PostgreSQL).
+Backend for an FX Trading App: users can register, verify email, fund wallets, and trade Naira (NGN) against USD, EUR, GBP using real-time FX rates.
+
+## Tech stack
+
+- **NestJS** – API framework
+- **TypeORM** – ORM
+- **PostgreSQL** – database
+- **BullMQ + Redis** – email queue (OTP)
+- **OpenAPI (Swagger)** – API docs
+
+## Setup
+
+1. **Requirements**: Node 18+, PostgreSQL, Redis.
+
+2. **Install**:
+   ```bash
+   npm install
+   ```
+
+3. **Environment**: Copy `.env.example` to `.env` and set values (DB, JWT, mail, FX API, Redis). See `.env.example` for required variables.
+
+4. **Database**: With `synchronize: true` in development, the app creates tables on startup. For production, use migrations (see TypeORM docs).
+
+5. **Run**:
+   ```bash
+   npm run start:dev
+   ```
+
+6. **API docs**: Open [http://localhost:3000/api](http://localhost:3000/api) for Swagger UI.
+
+## Key assumptions
+
+- **Wallet**: One wallet per user; balances per currency (NGN, USD, EUR, GBP). Balance rows are created on first fund (no pre-created zero balances on verification).
+- **FX**: Rates from external API (e.g. exchangerate-api.com), cached in-memory with TTL (configurable). On API failure, stale cache is used if available; otherwise request fails (503).
+- **Idempotency**: Fund, convert, and trade accept an optional idempotency key (body/header). Duplicate keys return the stored response.
+- **Gating**: Only email-verified users can access wallet and transactions. Only KYC-verified users (or **admin**) can use convert/trade; **admin does not need KYC**.
+- **KYC**: Manual or automated review; status pending | verified | rejected. No full KYC payloads in logs; PII not exposed beyond status to clients.
 
 ## Security
 
 - **HTTPS**: Use TLS in production. Do not send tokens or sensitive data over plain HTTP.
+- Rate limiting (Throttler) is applied globally. Auth and wallet write endpoints are subject to limits.
+- Audit logging: register, verify, login, logout (and optionally fund/convert/trade) are logged with userId, action, resource, outcome. No passwords or full tokens in logs.
+
+## Architectural decisions
+
+- **PostgreSQL** only (no MySQL).
+- **Modular structure**: Auth, User, Wallet, Fx, KYC, Email as feature modules; common filters, guards, interceptors shared.
+- **Queue for email**: OTP is enqueued (BullMQ) after register; processor sends via nodemailer. Response is not blocked on email delivery.
+- **Cache for FX**: In-memory cache with TTL; optional Redis for FX cache (Redis is used for the email queue).
+
+## API overview
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /auth/register | Register, triggers OTP email |
+| POST | /auth/verify | Verify OTP, activate account |
+| POST | /auth/login | Login, returns JWT |
+| POST | /auth/logout | Invalidate token |
+| GET | /wallet | Balances (email-verified) |
+| POST | /wallet/fund | Fund wallet |
+| POST | /wallet/convert | Convert currencies (KYC or admin) |
+| POST | /wallet/trade | Trade NGN with others (KYC or admin) |
+| GET | /fx/rates | Current FX rates (public) |
+| GET | /transactions | Transaction history (paginated) |
+| POST | /kyc/submit | Submit KYC |
+| GET | /kyc/status | KYC status |
+
+See Swagger UI at `/api` for full request/response shapes.

@@ -1,10 +1,13 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { EmailVerifiedGuard } from '../../common/guards/email-verified.guard';
 import { ListTransactionsDto } from './dto/list-transactions.dto';
 import { WalletService } from './wallet.service';
 
+@ApiTags('transactions')
+@ApiBearerAuth()
 @Controller('transactions')
 @UseGuards(EmailVerifiedGuard)
 export class TransactionsController {

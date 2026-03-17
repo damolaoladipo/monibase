@@ -1,4 +1,5 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
@@ -9,12 +10,15 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('register')
+  @ApiOperation({ summary: 'Register and trigger OTP email' })
+  @ApiResponse({ status: 201, description: 'Check email for OTP' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register({
       email: dto.email,

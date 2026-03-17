@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { EmailVerifiedGuard } from '../../common/guards/email-verified.guard';
@@ -8,6 +9,8 @@ import { FundWalletDto } from './dto/fund-wallet.dto';
 import { TradeDto } from './dto/trade.dto';
 import { WalletService } from './wallet.service';
 
+@ApiTags('wallet')
+@ApiBearerAuth()
 @Controller('wallet')
 @UseGuards(EmailVerifiedGuard)
 export class WalletController {
