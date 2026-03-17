@@ -66,6 +66,9 @@ export class User {
   @Column({ name: 'otp_type', type: 'varchar', nullable: true })
   otpType: string | null;
 
+  @Column({ name: 'last_login', type: 'timestamptz', nullable: true })
+  lastLogin: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

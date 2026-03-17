@@ -4,6 +4,7 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import { OtpType } from '../user/entities/user.entity';
 import { TokenService } from './token.service';
+import { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 15;
@@ -65,5 +66,34 @@ export class AuthService {
       isActive: true,
     });
     return { message: 'Account verified' };
+  }
+
+  async login(user: User): Promise<{ token: string; user: JwtPayload }> {
+    await this.userService.update(user.id, { lastLogin: new Date() });
+    const token = this.tokenService.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isActivated: user.isActivated,
+      tokenVersion: user.tokenVersion,
+    });
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isActivated: user.isActivated,
+        tokenVersion: user.tokenVersion,
+      },
+    };
+  }
+
+  async logout(userId: string): Promise<{ message: string }> {
+    const user = await this.userService.findById(userId);
+    if (user) {
+      await this.userService.update(userId, { tokenVersion: user.tokenVersion + 1 });
+    }
+    return { message: 'Logged out' };
   }
 }
