@@ -5,6 +5,15 @@ import { WalletBalance } from './entities/wallet-balance.entity';
 import { Transaction } from './entities/transaction.entity';
 import { IdempotencyRecord } from './entities/idempotency-record.entity';
 
+export interface ListTransactionsOptions {
+  userId: string;
+  page?: number;
+  limit?: number;
+  type?: string;
+  fromDate?: Date;
+  toDate?: Date;
+}
+
 @Injectable()
 export class WalletRepository {
   constructor(
@@ -77,6 +86,34 @@ export class WalletRepository {
     const repo = manager ? manager.getRepository(IdempotencyRecord) : this.idempotencyRepo;
     const record = repo.create({ key, userId, response });
     return repo.save(record);
+  }
+
+  async listTransactions(opts: ListTransactionsOptions): Promise<{ items: Transaction[]; total: number }> {
+    const page = Math.max(1, opts.page ?? 1);
+    const limit = Math.min(100, Math.max(1, opts.limit ?? 20));
+    const skip = (page - 1) * limit;
+
+    const qb = this.transactionRepo
+      .createQueryBuilder('t')
+      .where('t.user_id = :userId', { userId: opts.userId });
+
+    if (opts.type) {
+      qb.andWhere('t.type = :type', { type: opts.type });
+    }
+    if (opts.fromDate) {
+      qb.andWhere('t.created_at >= :fromDate', { fromDate: opts.fromDate });
+    }
+    if (opts.toDate) {
+      qb.andWhere('t.created_at <= :toDate', { toDate: opts.toDate });
+    }
+
+    const [items, total] = await qb
+      .orderBy('t.created_at', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return { items, total };
   }
 
   getDataSource(): DataSource {

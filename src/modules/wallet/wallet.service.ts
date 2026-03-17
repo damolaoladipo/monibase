@@ -149,4 +149,38 @@ export class WalletService {
     }
     return this.convertOrTrade(userId, sourceCurrency, targetCurrency, amount, idempotencyKey, TransactionType.TRADE);
   }
+
+  async listTransactions(
+    userId: string,
+    page: number,
+    limit: number,
+    type?: string,
+    fromDate?: Date,
+    toDate?: Date,
+  ): Promise<{ items: Array<{ id: string; type: string; amount: string; currencyCode: string | null; sourceCurrency: string | null; targetCurrency: string | null; rate: string | null; status: string; createdAt: Date }>; total: number; page: number; limit: number }> {
+    const { items, total } = await this.walletRepo.listTransactions({
+      userId,
+      page,
+      limit,
+      type,
+      fromDate,
+      toDate,
+    });
+    return {
+      items: items.map((t) => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount,
+        currencyCode: t.currencyCode,
+        sourceCurrency: t.sourceCurrency,
+        targetCurrency: t.targetCurrency,
+        rate: t.rate,
+        status: t.status,
+        createdAt: t.createdAt,
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
 }

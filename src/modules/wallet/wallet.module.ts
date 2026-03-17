@@ -9,6 +9,7 @@ import { FxModule } from '../fx/fx.module';
 import { WalletRepository } from './wallet.repository';
 import { WalletService } from './wallet.service';
 import { WalletController } from './wallet.controller';
+import { TransactionsController } from './transactions.controller';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { WalletController } from './wallet.controller';
     FxModule,
     KycModule,
   ],
-  controllers: [WalletController],
+  controllers: [WalletController, TransactionsController],
   providers: [WalletRepository, WalletService, KycVerifiedGuard],
   exports: [WalletService, WalletRepository],
 })
