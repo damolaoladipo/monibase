@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AppController } from './app.controller';
 
@@ -31,6 +32,7 @@ import { AppController } from './app.controller';
       inject: [ConfigService],
     }),
     AuthModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [
