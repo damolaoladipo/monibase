@@ -15,6 +15,10 @@ export class KycRepository {
     return this.repo.findOne({ where: { userId } });
   }
 
+  async findById(id: string): Promise<Kyc | null> {
+    return this.repo.findOne({ where: { id } });
+  }
+
   async create(data: Partial<Kyc>): Promise<Kyc> {
     const kyc = this.repo.create(data);
     return this.repo.save(kyc);
@@ -25,5 +29,12 @@ export class KycRepository {
     const updated = await this.repo.findOne({ where: { id } });
     if (!updated) throw new Error('Kyc not found after update');
     return updated;
+  }
+
+  async findPending(): Promise<Kyc[]> {
+    return this.repo.find({
+      where: { status: KycStatus.PENDING },
+      order: { submittedAt: 'ASC' },
+    });
   }
 }

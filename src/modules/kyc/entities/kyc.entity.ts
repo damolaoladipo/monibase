@@ -39,6 +39,21 @@ export class Kyc {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason: string | null;
 
+  @Column({ name: 'full_name', type: 'varchar', nullable: true })
+  fullName: string | null;
+
+  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
+  dateOfBirth: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  address: string | null;
+
+  @Column({ name: 'id_type', type: 'varchar', nullable: true })
+  idType: string | null;
+
+  @Column({ name: 'id_number', type: 'varchar', nullable: true })
+  idNumber: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
