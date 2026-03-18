@@ -4,15 +4,15 @@ This document describes how the Monibase FX trading API is structured: runtime c
 
 ## Visual architecture
 
-High-level diagrams (hand-drawn references). Some labels describe the broader product or target stack; the sections below document the current NestJS API in this repo.
+High-level diagrams (hand-drawn references). Some labels describe the broader product or target stack; the sections below document the current NestJS API in this repo. Diagrams live under [`images/`](./images/); if they do not render in the preview, open the PNGs from that folder or ensure the repo is cloned with `images/*.png` present (they are versioned).
 
 **FX wallet and trading experience** (clients, modular monolith, data stores, external FX and services, tech stack, environments):
 
-![Monibase system overview](./docs/images/monibase-architecture-overview.png)
+![Monibase system overview](images/monibase-architecture.png)
 
 **Backend API functional areas** (user management, auth, notifications, business core, utilities):
 
-![Monibase backend API modules](./docs/images/monibase-backend-api-modules.png)
+![Monibase backend API modules](images/monibase-api-modules.png)
 
 ---
 
