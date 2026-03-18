@@ -115,4 +115,38 @@ export class FxRatesService {
     }
     return rate;
   }
+
+  /**
+   * Rate plus cache/source metadata for quotes and admin debug.
+   */
+  async getRateWithContext(
+    fromCurrency: string,
+    toCurrency: string,
+  ): Promise<{
+    rate: number;
+    stale?: boolean;
+    updatedAt: string;
+    rateBase: string;
+  }> {
+    if (fromCurrency === toCurrency) {
+      const r = await this.getRates(fromCurrency);
+      return {
+        rate: 1,
+        stale: r.stale,
+        updatedAt: r.updatedAt,
+        rateBase: fromCurrency,
+      };
+    }
+    const response = await this.getRates(fromCurrency);
+    const rate = response.rates[toCurrency];
+    if (rate == null) {
+      throw new ServiceUnavailableException(`Rate not available for ${fromCurrency}/${toCurrency}`);
+    }
+    return {
+      rate,
+      stale: response.stale,
+      updatedAt: response.updatedAt,
+      rateBase: response.base,
+    };
+  }
 }

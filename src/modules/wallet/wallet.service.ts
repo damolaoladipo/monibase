@@ -6,6 +6,7 @@ import { UserService } from '../user/user.service';
 import { isSupportedCurrency } from '../../common/constants/currencies';
 import { validateTradePair } from './dto/trade.dto';
 import { AuditLoggerService } from '../../common/services/audit-logger.service';
+import { WALLET_INSTANT_DELIVERY } from '../../common/constants/wallet-delivery';
 import { TransferDto } from './dto/transfer.dto';
 
 @Injectable()
@@ -120,6 +121,7 @@ export class WalletService {
       const response = {
         balances: balances.map((b) => ({ currencyCode: b.currencyCode, amount: b.amount })),
         transactionId: tx.id,
+        delivery: WALLET_INSTANT_DELIVERY,
       };
       if (key) {
         await this.walletRepo.saveIdempotency(key, userId, response, manager);
@@ -219,6 +221,7 @@ export class WalletService {
         const response = {
           balances: balances.map((b) => ({ currencyCode: b.currencyCode, amount: b.amount })),
           transactionId: txOut.id,
+          delivery: WALLET_INSTANT_DELIVERY,
         };
         if (key) {
           await this.walletRepo.saveIdempotency(key, userId, response, manager);
@@ -264,6 +267,7 @@ export class WalletService {
       const response = {
         balances: balances.map((b) => ({ currencyCode: b.currencyCode, amount: b.amount })),
         transactionId: tx.id,
+        delivery: WALLET_INSTANT_DELIVERY,
       };
       if (key) {
         await this.walletRepo.saveIdempotency(key, userId, response, manager);

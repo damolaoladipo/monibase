@@ -78,7 +78,21 @@ async function bootstrap(): Promise<void> {
   // Swagger
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Monibase FX Trading API')
-    .setDescription('Backend API for FX Trading App: auth, wallet, FX rates, transactions, KYC')
+    .setDescription(
+      [
+        'APIs for FX trading: registration, wallet funding, currency conversion, and trading NGN vs USD/EUR/GBP.',
+        '',
+        '**Get started:** All routes use prefix `/api/v1`. Register, verify OTP, then login to obtain a JWT.',
+        '',
+        '**Authentication:** Use the Authorize button to set a Bearer JWT for protected endpoints. Required header: `Authorization: Bearer <token>`.',
+        '',
+        '**Responses:** Success and error bodies use a consistent envelope: `error`, `message`, `errors`, `data`, `status`.',
+        '',
+        '**Rate limits:** Auth: 20/15min per IP; high-value wallet (fund/trade/convert/transfer): 30/hour per IP; global: 1000/30min per IP. 429 when exceeded.',
+        '',
+        '**FX:** Public `GET /fx/rates` and `GET /fx/quotes` (Wise-style comparison quotes). Admin: `GET /admin/fx/quote-debug`.',
+      ].join('\n'),
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
