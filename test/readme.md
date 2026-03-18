@@ -14,7 +14,7 @@ Jest-based unit and e2e tests aligned with [task.md](../monibase/task.md) and th
 ## Prerequisites
 
 - Unit tests: none (mocks only).
-- E2E tests: PostgreSQL test database. Create `monibase_test` and set `DB_DATABASE=monibase_test` (or rely on default in setup.ts). No Redis required (Bull is mocked).
+- E2E tests: PostgreSQL test database and Redis. Create `monibase_test` and set `DB_DATABASE=monibase_test` (or rely on default in setup.ts). Bull is mocked in unit tests but e2e uses the real app; ensure Postgres (and Redis if the app connects at boot) are available. If the app fails to init (e.g. DB unreachable), e2e suites skip gracefully and `afterAll` is guarded so the process does not crash.
 
 ## Commands
 
