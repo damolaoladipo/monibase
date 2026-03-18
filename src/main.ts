@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import express from 'express';
+import { json, urlencoded } from 'express';
 import helmet from 'helmet';
-import hpp from 'hpp';
+import hpp = require('hpp');
 import rateLimit from 'express-rate-limit';
 import basicAuth from 'express-basic-auth';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -31,14 +31,15 @@ import { createDashboardRouter, DASHBOARD_BASE_PATH } from './tasks/monitoring/d
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
-  app.enableShutdownHooks();
+  // Do not use enableShutdownHooks() together with manual SIGTERM/SIGINT handlers:
+  // both call app.close() and TypeORM would end the pg pool twice.
 
   const config = app.get(ConfigService);
   const appConfig = getAppConfig(config);
 
   // Body parser (api app.config: 50mb)
-  app.use(express.json({ limit: BODY_PARSER_LIMIT }));
-  app.use(express.urlencoded({ extended: true, limit: BODY_PARSER_LIMIT }));
+  app.use(json({ limit: BODY_PARSER_LIMIT }));
+  app.use(urlencoded({ extended: true, limit: BODY_PARSER_LIMIT }));
 
   app.setGlobalPrefix('api/v1');
 
@@ -123,16 +124,26 @@ async function bootstrap(): Promise<void> {
   const port = appConfig.port;
   await app.listen(port);
 
+  let isClosing = false;
   const shutdown = (signal: string): void => {
+    if (isClosing) return;
+    isClosing = true;
     console.log(`${signal} received, closing application...`);
-    app.close().then(() => {
-      process.exit(signal === 'unhandledRejection' ? 1 : 0);
-    });
+    void app
+      .close()
+      .then(() => {
+        process.exit(signal === 'unhandledRejection' ? 1 : 0);
+      })
+      .catch((closeErr: unknown) => {
+        console.error('Error during app.close():', closeErr);
+        process.exit(1);
+      });
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('unhandledRejection', (err: unknown) => {
+    if (isClosing) return;
     console.error('Unhandled rejection:', err);
     shutdown('unhandledRejection');
   });

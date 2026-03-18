@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Bull, { Queue, Job, DoneCallback } from 'bull';
+import type { Queue, Job, DoneCallback, JobOptions, QueueOptions } from 'bull';
+import Bull = require('bull');
 import { v4 as uuidv4 } from 'uuid';
 import { getRedisConfig } from '../../configs/redis.config';
 import {
@@ -28,7 +29,7 @@ export class BullQueueService implements OnModuleDestroy {
     return getRedisConfig(this.config);
   }
 
-  private getDefaultJobOptions(): Bull.JobOptions {
+  private getDefaultJobOptions(): JobOptions {
     return {
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000 },
@@ -43,7 +44,7 @@ export class BullQueueService implements OnModuleDestroy {
     if (this.queues.has(name)) {
       return this.queues.get(name)!;
     }
-    const options: Bull.QueueOptions = {
+    const options: QueueOptions = {
       redis: this.getRedisOptions(),
       defaultJobOptions: this.getDefaultJobOptions(),
     };

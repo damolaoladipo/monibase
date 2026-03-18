@@ -41,13 +41,13 @@ export class Transaction {
   @Column({ type: 'decimal', precision: 18, scale: 4 })
   amount: string;
 
-  @Column({ name: 'currency_code', length: 3, nullable: true })
+  @Column({ name: 'currency_code', type: 'varchar', length: 3, nullable: true })
   currencyCode: string | null;
 
-  @Column({ name: 'source_currency', length: 3, nullable: true })
+  @Column({ name: 'source_currency', type: 'varchar', length: 3, nullable: true })
   sourceCurrency: string | null;
 
-  @Column({ name: 'target_currency', length: 3, nullable: true })
+  @Column({ name: 'target_currency', type: 'varchar', length: 3, nullable: true })
   targetCurrency: string | null;
 
   @Column({ type: 'decimal', precision: 18, scale: 8, nullable: true })
@@ -56,7 +56,7 @@ export class Transaction {
   @Column({ type: 'varchar', length: 20, default: TransactionStatus.SUCCESS })
   status: string;
 
-  @Column({ name: 'idempotency_key', unique: true, nullable: true })
+  @Column({ name: 'idempotency_key', type: 'varchar', length: 255, unique: true, nullable: true })
   idempotencyKey: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

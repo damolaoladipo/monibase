@@ -39,7 +39,7 @@ export class Kyc {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason: string | null;
 
-  @Column({ name: 'full_name', type: 'varchar', nullable: true })
+  @Column({ name: 'full_name', type: 'varchar', length: 255, nullable: true })
   fullName: string | null;
 
   @Column({ name: 'date_of_birth', type: 'date', nullable: true })
@@ -48,10 +48,10 @@ export class Kyc {
   @Column({ type: 'text', nullable: true })
   address: string | null;
 
-  @Column({ name: 'id_type', type: 'varchar', nullable: true })
+  @Column({ name: 'id_type', type: 'varchar', length: 64, nullable: true })
   idType: string | null;
 
-  @Column({ name: 'id_number', type: 'varchar', nullable: true })
+  @Column({ name: 'id_number', type: 'varchar', length: 128, nullable: true })
   idNumber: string | null;
 
   @Column({ name: 'id_document_key', type: 'varchar', length: 512, nullable: true })

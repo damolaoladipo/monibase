@@ -31,10 +31,20 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    if (this.client) {
-      await this.client.quit();
-      this.client = null;
-      this.logger.log('Redis cache disconnected');
+    const c = this.client;
+    this.client = null;
+    if (!c) return;
+    try {
+      if (c.isOpen) {
+        await c.quit();
+        this.logger.log('Redis cache disconnected');
+      }
+    } catch (err) {
+      const name = (err as Error)?.name ?? '';
+      const msg = (err as Error)?.message ?? String(err);
+      if (name !== 'ClientClosedError' && !msg.includes('closed')) {
+        this.logger.warn(`Redis cache shutdown: ${msg}`);
+      }
     }
   }
 

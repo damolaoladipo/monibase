@@ -33,10 +33,10 @@ export class User {
   @Column({ name: 'last_name', default: '' })
   lastName: string;
 
-  @Column({ name: 'phone_number', nullable: true })
+  @Column({ name: 'phone_number', type: 'varchar', length: 32, nullable: true })
   phoneNumber: string | null;
 
-  @Column({ name: 'phone_code', nullable: true, length: 10 })
+  @Column({ name: 'phone_code', type: 'varchar', length: 10, nullable: true })
   phoneCode: string | null;
 
   @Column({
@@ -67,7 +67,7 @@ export class User {
   @Column({ name: 'login_limit', default: 0 })
   loginLimit: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 12, nullable: true })
   otp: string | null;
 
   @Column({ name: 'otp_expiry', type: 'timestamptz', nullable: true })

@@ -1,0 +1,22 @@
+diff --git a/node_modules/typeorm/driver/postgres/PostgresQueryRunner.js b/node_modules/typeorm/driver/postgres/PostgresQueryRunner.js
+index 328d0db..b001b82 100644
+--- a/node_modules/typeorm/driver/postgres/PostgresQueryRunner.js
++++ b/node_modules/typeorm/driver/postgres/PostgresQueryRunner.js
+@@ -1845,12 +1845,11 @@ class PostgresQueryRunner extends BaseQueryRunner_1.BaseQueryRunner {
+             `INNER JOIN "pg_class" "cl" ON "cl"."oid" = "con"."confrelid" ${isPartitionCondition}` +
+             `INNER JOIN "pg_namespace" "ns" ON "cl"."relnamespace" = "ns"."oid" ` +
+             `INNER JOIN "pg_attribute" "att2" ON "att2"."attrelid" = "con"."conrelid" AND "att2"."attnum" = "con"."parent"`;
+-        const [dbColumns, dbConstraints, dbIndices, dbForeignKeys,] = await Promise.all([
+-            this.query(columnsSql),
+-            this.query(constraintsSql),
+-            this.query(indicesSql),
+-            this.query(foreignKeysSql),
+-        ]);
++        // Sequential queries: pg 8.19+ deprecates concurrent query() on the same client (pg 9 will error).
++        const dbColumns = await this.query(columnsSql);
++        const dbConstraints = await this.query(constraintsSql);
++        const dbIndices = await this.query(indicesSql);
++        const dbForeignKeys = await this.query(foreignKeysSql);
+         // create tables for loaded tables
+         return Promise.all(dbTables.map(async (dbTable) => {
+             const table = new Table_1.Table();
