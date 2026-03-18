@@ -53,20 +53,20 @@ The current implementation includes:
 
 ## Contents
 
-0. [Project overview](#project-overview) – purpose, core loop, product summary, scope  
-1. [Quick start](#quick-start)
-2. [New developer setup](#new-developer-setup)
-3. [Environment variables](#environment-variables)
-4. [Project structure](#project-structure)
-5. [NPM scripts](#npm-scripts)
-6. [Verifying your setup](#verifying-your-setup)
-7. [API documentation](#api-documentation)
-8. [Testing](#testing)
-9. [Troubleshooting](#troubleshooting)
-10. [Key product assumptions](#key-product-assumptions)
-11. [Security](#security)
-12. [Architectural decisions](#architectural-decisions)  
-13. [System architecture (diagrams)](./ARCHITECTURE.md) – modules, data model, flows
+1. [Project overview](#project-overview) – purpose, core loop, product summary, scope
+2. [Quick start](#quick-start)
+3. [New developer setup](#new-developer-setup)
+4. [Environment variables](#environment-variables)
+5. [Project structure](#project-structure)
+6. [NPM scripts](#npm-scripts)
+7. [Verifying your setup](#verifying-your-setup)
+8. [API documentation](#api-documentation)
+9. [Testing](#testing)
+10. [Troubleshooting](#troubleshooting)
+11. [Key product assumptions](#key-product-assumptions)
+12. [Security](#security)
+13. [Architectural decisions](#architectural-decisions)
+14. [System architecture (diagrams)](./ARCHITECTURE.md) – modules, data model, flows
 
 ---
 
@@ -90,12 +90,14 @@ npm run start:dev
 
 ### Prerequisites
 
-| Tool | Notes |
-|------|--------|
-| **Node.js** | v18 or newer (`node -v`) |
-| **npm** | Comes with Node |
-| **PostgreSQL** | 14+ recommended; empty database for the app |
-| **Redis** | For BullMQ (email OTP queue); must be reachable before OTP emails are processed |
+
+| Tool           | Notes                                                                           |
+| -------------- | ------------------------------------------------------------------------------- |
+| **Node.js**    | v18 or newer (`node -v`)                                                        |
+| **npm**        | Comes with Node                                                                 |
+| **PostgreSQL** | 14+ recommended; empty database for the app                                     |
+| **Redis**      | For BullMQ (email OTP queue); must be reachable before OTP emails are processed |
+
 
 Optional: **Git**, **Docker** (if you prefer containerized Postgres/Redis).
 
@@ -196,23 +198,25 @@ Watch the console for `Nest application successfully started` (or similar) and t
 
 ## Environment variables
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `NODE_ENV` | | `development` \| `production` \| `test` |
-| `PORT` | | HTTP port (default 3000) |
-| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` | Yes | PostgreSQL |
-| `JWT_SECRET` | Yes (min 32 chars) | JWT signing |
-| `JWT_EXPIRY` | | e.g. `7d` |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` | Yes | Outbound email |
-| `MAIL_USER`, `MAIL_PASSWORD` | Often | SMTP auth |
-| `FX_API_URL` | Yes | FX provider base URL |
-| `FX_API_KEY` | If provider needs it | API key |
-| `FX_CACHE_TTL_SECONDS` | | In-memory rate cache TTL |
-| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB` | | BullMQ / queue |
-| `APP_URL` | | Links in emails |
-| `STORAGE_LOCAL_PATH` | | KYC document uploads (default `./uploads`) |
-| `ENABLE_SEEDING` | `true` to run seeds on startup | Roles, permissions, optional superadmin |
-| `SUPERADMIN_*` | If seeding and no admin yet | First super-admin account |
+
+| Variable                                                          | Required                       | Purpose                                    |
+| ----------------------------------------------------------------- | ------------------------------ | ------------------------------------------ |
+| `NODE_ENV`                                                        |                                | `development` | `production` | `test`      |
+| `PORT`                                                            |                                | HTTP port (default 3000)                   |
+| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` | Yes                            | PostgreSQL                                 |
+| `JWT_SECRET`                                                      | Yes (min 32 chars)             | JWT signing                                |
+| `JWT_EXPIRY`                                                      |                                | e.g. `7d`                                  |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`                             | Yes                            | Outbound email                             |
+| `MAIL_USER`, `MAIL_PASSWORD`                                      | Often                          | SMTP auth                                  |
+| `FX_API_URL`                                                      | Yes                            | FX provider base URL                       |
+| `FX_API_KEY`                                                      | If provider needs it           | API key                                    |
+| `FX_CACHE_TTL_SECONDS`                                            |                                | In-memory rate cache TTL                   |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`          |                                | BullMQ / queue                             |
+| `APP_URL`                                                         |                                | Links in emails                            |
+| `STORAGE_LOCAL_PATH`                                              |                                | KYC document uploads (default `./uploads`) |
+| `ENABLE_SEEDING`                                                  | `true` to run seeds on startup | Roles, permissions, optional superadmin    |
+| `SUPERADMIN_`*                                                    | If seeding and no admin yet    | First super-admin account                  |
+
 
 Copy `.env.example` for the full list and comments.
 
@@ -247,16 +251,18 @@ Feature code pattern: `*.module.ts`, `*.controller.ts`, `*.service.ts`, `entitie
 
 ## NPM scripts
 
-| Command | Use |
-|---------|-----|
-| `npm run start:dev` | Development with hot reload |
-| `npm run start:debug` | Attach Node debugger |
-| `npm run build` | Compile to `dist/` |
-| `npm run start:prod` | Run compiled app (`node dist/src/server.js`) |
-| `npm run test:unit` | Unit tests only (no DB) |
-| `npm run test:e2e` | E2E tests (needs Postgres; see [Testing](#testing)) |
-| `npm run test` | All Jest suites |
-| `npm run migration:generate` / `migration:run` | TypeORM migrations (after `build`) |
+
+| Command                                        | Use                                                 |
+| ---------------------------------------------- | --------------------------------------------------- |
+| `npm run start:dev`                            | Development with hot reload                         |
+| `npm run start:debug`                          | Attach Node debugger                                |
+| `npm run build`                                | Compile to `dist/`                                  |
+| `npm run start:prod`                           | Run compiled app (`node dist/src/server.js`)        |
+| `npm run test:unit`                            | Unit tests only (no DB)                             |
+| `npm run test:e2e`                             | E2E tests (needs Postgres; see [Testing](#testing)) |
+| `npm run test`                                 | All Jest suites                                     |
+| `npm run migration:generate` / `migration:run` | TypeORM migrations (after `build`)                  |
+
 
 ---
 
@@ -273,16 +279,18 @@ Feature code pattern: `*.module.ts`, `*.controller.ts`, `*.service.ts`, `entitie
 
 Monibase exposes REST JSON under **`/api/v1`**. Responses use a common envelope where applicable (`error`, `message`, `errors`, `data`, `status`).
 
-**Interactive docs:** [Swagger UI at `/api`](http://localhost:3000/api) (try-it-out, schemas).
+**Interactive docs:** [Swagger UI at /api](http://localhost:3000/api) (try-it-out, schemas).
 
 ### Authentication
 
 Protected routes need:
 
-| Header | Value |
-|--------|--------|
-| `Content-Type` | `application/json` (or `multipart/form-data` for KYC document upload) |
-| `Authorization` | `Bearer <jwt>` from `POST /auth/login` |
+
+| Header          | Value                                                                 |
+| --------------- | --------------------------------------------------------------------- |
+| `Content-Type`  | `application/json` (or `multipart/form-data` for KYC document upload) |
+| `Authorization` | `Bearer <jwt>` from `POST /auth/login`                                |
+
 
 Invalid or missing token example:
 
@@ -312,11 +320,13 @@ List endpoints (e.g. `GET /transactions`, `GET /users`) support `page`, `limit`,
 
 ### Rate limits
 
-| Scope | Limit | Window |
-|-------|--------|--------|
-| `/api/v1/auth/*` | 20 | 15 min / IP |
-| Wallet fund, convert, trade, transfer | 30 | 1 hour / IP |
-| Global | 1000 | 30 min / IP |
+
+| Scope                                 | Limit | Window      |
+| ------------------------------------- | ----- | ----------- |
+| `/api/v1/auth/*`                      | 20    | 15 min / IP |
+| Wallet fund, convert, trade, transfer | 30    | 1 hour / IP |
+| Global                                | 1000  | 30 min / IP |
+
 
 **429** when exceeded; clients should retry with backoff.
 
@@ -324,37 +334,45 @@ List endpoints (e.g. `GET /transactions`, `GET /users`) support `page`, `limit`,
 
 **Auth**
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /auth/register | Register; enqueues OTP email |
-| POST | /auth/verify | Verify OTP |
-| POST | /auth/login | JWT |
-| POST | /auth/logout | Invalidate token |
+
+| Method | Path           | Description                  |
+| ------ | -------------- | ---------------------------- |
+| POST   | /auth/register | Register; enqueues OTP email |
+| POST   | /auth/verify   | Verify OTP                   |
+| POST   | /auth/login    | JWT                          |
+| POST   | /auth/logout   | Invalidate token             |
+
 
 **Wallet** (email-verified; convert/trade need KYC or admin role)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /wallet | Balances; seeds NGN 0 on first access |
-| POST | /wallet/fund | Fund |
-| POST | /wallet/convert | Convert |
-| POST | /wallet/trade | Trade (NGN pairs validated) |
-| POST | /wallet/transfer | Same-user FX path or P2P same currency; idempotent |
+
+| Method | Path             | Description                                        |
+| ------ | ---------------- | -------------------------------------------------- |
+| GET    | /wallet          | Balances; seeds NGN 0 on first access              |
+| POST   | /wallet/fund     | Fund                                               |
+| POST   | /wallet/convert  | Convert                                            |
+| POST   | /wallet/trade    | Trade (NGN pairs validated)                        |
+| POST   | /wallet/transfer | Same-user FX path or P2P same currency; idempotent |
+
 
 **FX** (public)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /fx/rates | Live rates |
-| GET | /fx/quotes | Comparison-style quotes (rate, fee, `delivery` min/max ISO durations; in-wallet instant = `PT0S`) |
+
+| Method | Path       | Description                                                                                       |
+| ------ | ---------- | ------------------------------------------------------------------------------------------------- |
+| GET    | /fx/rates  | Live rates                                                                                        |
+| GET    | /fx/quotes | Comparison-style quotes (rate, fee, `delivery` min/max ISO durations; in-wallet instant = `PT0S`) |
+
 
 **Admin** (JWT + `admin` or `super-admin`)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /admin/fx/quote-debug | Quotes + stale, rate base, mid-market ref |
-| GET | /users | Paginated user list |
-| GET/POST | /kyc/admin/* | Pending KYC, review |
+
+| Method   | Path                  | Description                               |
+| -------- | --------------------- | ----------------------------------------- |
+| GET      | /admin/fx/quote-debug | Quotes + stale, rate base, mid-market ref |
+| GET      | /users                | Paginated user list                       |
+| GET/POST | /kyc/admin/*          | Pending KYC, review                       |
+
 
 **Transactions**
 
@@ -379,16 +397,18 @@ List endpoints (e.g. `GET /transactions`, `GET /users`) support `page`, `limit`,
 
 ## Troubleshooting
 
-| Symptom | Things to check |
-|---------|------------------|
-| App exits on startup | Joi validation message – fix the listed env var |
-| `role "postgres" does not exist` | Create the DB user or set `DB_USERNAME` to your local Postgres user |
-| ECONNREFUSED Redis | Start Redis; match `REDIS_HOST` / `REDIS_PORT` |
-| OTP never arrives | SMTP settings, spam folder, mail catcher logs, Bull worker running |
-| FX `503` / rates unavailable | `FX_API_URL` / `FX_API_KEY`, network; first request needs upstream success or stale cache |
-| Tables missing in prod | Do not rely on `synchronize` in production; run migrations |
-| 403 on convert/trade | Complete KYC or use admin account |
+
+| Symptom                                                          | Things to check                                                                                                                                                                                                   |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App exits on startup                                             | Joi validation message – fix the listed env var                                                                                                                                                                   |
+| `role "postgres" does not exist`                                 | Create the DB user or set `DB_USERNAME` to your local Postgres user                                                                                                                                               |
+| ECONNREFUSED Redis                                               | Start Redis; match `REDIS_HOST` / `REDIS_PORT`                                                                                                                                                                    |
+| OTP never arrives                                                | SMTP settings, spam folder, mail catcher logs, Bull worker running                                                                                                                                                |
+| FX `503` / rates unavailable                                     | `FX_API_URL` / `FX_API_KEY`, network; first request needs upstream success or stale cache                                                                                                                         |
+| Tables missing in prod                                           | Do not rely on `synchronize` in production; run migrations                                                                                                                                                        |
+| 403 on convert/trade                                             | Complete KYC or use admin account                                                                                                                                                                                 |
 | `DeprecationWarning: client.query() when already executing` (pg) | Addressed by `patches/typeorm+0.3.28.patch` (applied on `npm install` via `patch-package`). TypeORM’s Postgres driver now loads table metadata with sequential `await` instead of parallel queries on one client. |
+
 
 ---
 
@@ -403,19 +423,7 @@ List endpoints (e.g. `GET /transactions`, `GET /users`) support `page`, `limit`,
 
 ---
 
-## Security
-
-- Use **HTTPS** in production.
-- Rate limits as in [Rate limits](#rate-limits).
-- **Audit logging** on auth, KYC events, wallet mutations – no passwords, full tokens, amounts, or PII in logs.
-
----
-
 ## Architectural decisions
 
 - **System architecture:** See [ARCHITECTURE.md](./ARCHITECTURE.md) for module diagram, domain model, and sequence flows (registration, wallet idempotency, KYC gating, FX cache).
-- **Modular NestJS:** Auth, User, Wallet, Fx, KYC, Email, shared common layer.
-- **PostgreSQL** only.
-- **Bull + Redis** for async OTP email.
-- **FX comparison** response shape aligned with [Wise Comparison API](https://docs.wise.com/api-reference/comparison) (multi-provider ready).
-- **API docs** influenced by clear structure (auth, responses, limits, grouped endpoints) similar to provider docs such as [Terraswitch](https://docs.terraswitching.com/).
+

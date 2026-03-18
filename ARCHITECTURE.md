@@ -4,27 +4,29 @@ This document describes how the Monibase FX trading API is structured: runtime c
 
 ## Visual architecture
 
-High-level diagrams (hand-drawn references). Some labels describe the broader product or target stack; the sections below document the current NestJS API in this repo. Diagrams live under [`images/`](./images/); if they do not render in the preview, open the PNGs from that folder or ensure the repo is cloned with `images/*.png` present (they are versioned).
+High-level diagrams (hand-drawn references). Some labels describe the broader product or target stack; the sections below document the current NestJS API in this repo.
 
 **FX wallet and trading experience** (clients, modular monolith, data stores, external FX and services, tech stack, environments):
 
-![Monibase system overview](images/monibase-architecture.png)
+![Monibase system overview](./images/monibase-architecture.png)
 
 **Backend API functional areas** (user management, auth, notifications, business core, utilities):
 
-![Monibase backend API modules](images/monibase-api-modules.png)
+![Monibase backend API modules](./images/monibase-api-modules.png)
 
 ---
 
 ## 1. Architectural goals
 
-| Goal | How it is addressed |
-|------|---------------------|
+
+| Goal                   | How it is addressed                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
 | Correct money movement | TypeORM transactions, wallet repository patterns, idempotency records for fund/convert/trade/transfer |
-| Compliance gates | Email verification for wallet access; KYC (or admin role) for convert/trade |
-| Resilient FX | External rates API + in-memory cache + TTL; stale fallback when upstream fails |
-| Observable operations | Transaction ledger; audit events for auth, KYC, wallet mutations |
-| Safe APIs | Global JWT guard (public routes opted out), throttling, role-based admin routes |
+| Compliance gates       | Email verification for wallet access; KYC (or admin role) for convert/trade                           |
+| Resilient FX           | External rates API + in-memory cache + TTL; stale fallback when upstream fails                        |
+| Observable operations  | Transaction ledger; audit events for auth, KYC, wallet mutations                                      |
+| Safe APIs              | Global JWT guard (public routes opted out), throttling, role-based admin routes                       |
+
 
 ---
 
@@ -57,16 +59,20 @@ flowchart LR
   API --> FX
 ```
 
+
+
 ---
 
 ## 3. Containers (runtime)
 
-| Container | Responsibility |
-|-----------|----------------|
-| **NestJS process** | HTTP API, business logic, validation, orchestration |
-| **PostgreSQL** | Users, wallets, transactions, KYC, idempotency keys, audit-related persistence |
-| **Redis** | BullMQ job queue (e.g. OTP email); optional extension for distributed cache |
-| **Local filesystem** | KYC document uploads (`STORAGE_LOCAL_PATH`) |
+
+| Container            | Responsibility                                                                 |
+| -------------------- | ------------------------------------------------------------------------------ |
+| **NestJS process**   | HTTP API, business logic, validation, orchestration                            |
+| **PostgreSQL**       | Users, wallets, transactions, KYC, idempotency keys, audit-related persistence |
+| **Redis**            | BullMQ job queue (e.g. OTP email); optional extension for distributed cache    |
+| **Local filesystem** | KYC document uploads (`STORAGE_LOCAL_PATH`)                                    |
+
 
 ---
 
@@ -99,21 +105,25 @@ flowchart TB
   Email --> Bull
 ```
 
+
+
 ### Module responsibilities
 
-| Module | Role |
-|--------|------|
-| **CommonModule** | Shared guards (JWT, roles, KYC-verified), decorators, middleware (device detection), query helpers |
-| **AuthModule** | Register, OTP verify, login/logout, JWT + Passport strategies |
-| **UserModule** | Profile, deactivation, admin user listing |
-| **EmailModule** | Mail sending; queues outbound mail via Bull |
-| **BullModule** | Redis-backed queue wiring |
-| **TasksModule** | Background workers (e.g. mail consumer) |
-| **WalletModule** | Balances, fund, convert, trade, transfer, transactions API, idempotency |
-| **FxModule** | Rate fetch, cache, quote services; public + admin FX controllers |
-| **KycModule** | Submit, status, documents; admin review |
-| **StorageModule** | File persistence for uploads |
-| **CacheModule** | Application caching (e.g. profile) |
+
+| Module            | Role                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| **CommonModule**  | Shared guards (JWT, roles, KYC-verified), decorators, middleware (device detection), query helpers |
+| **AuthModule**    | Register, OTP verify, login/logout, JWT + Passport strategies                                      |
+| **UserModule**    | Profile, deactivation, admin user listing                                                          |
+| **EmailModule**   | Mail sending; queues outbound mail via Bull                                                        |
+| **BullModule**    | Redis-backed queue wiring                                                                          |
+| **TasksModule**   | Background workers (e.g. mail consumer)                                                            |
+| **WalletModule**  | Balances, fund, convert, trade, transfer, transactions API, idempotency                            |
+| **FxModule**      | Rate fetch, cache, quote services; public + admin FX controllers                                   |
+| **KycModule**     | Submit, status, documents; admin review                                                            |
+| **StorageModule** | File persistence for uploads                                                                       |
+| **CacheModule**   | Application caching (e.g. profile)                                                                 |
+
 
 ### Global cross-cutting
 
@@ -169,6 +179,8 @@ erDiagram
   }
 ```
 
+
+
 One logical wallet per user is represented by multiple **WalletBalance** rows (one per currency). **Transaction** records funding, conversion, trade, and transfer events for history and audit.
 
 ---
@@ -191,6 +203,8 @@ flowchart TD
   H -->|Ok| Z
   G -->|No| Z
 ```
+
+
 
 Email verification is enforced where the product requires it (wallet flows). **KycVerifiedGuard** restricts convert/trade for non-admin users.
 
@@ -220,6 +234,8 @@ sequenceDiagram
   API-->>C: success
 ```
 
+
+
 ### 7.2 Fund / convert with idempotency
 
 ```mermaid
@@ -246,6 +262,8 @@ sequenceDiagram
   Note over WS,FX: Convert/trade: FX quote + DB transaction + transaction row
 ```
 
+
+
 ### 7.3 KYC and trading gate
 
 ```mermaid
@@ -263,11 +281,11 @@ sequenceDiagram
   Note right of W: KycVerifiedGuard allows if verified or admin
 ```
 
+
+
 ---
 
 ## 8. FX rate pipeline
-
-Editable diagram: [docs/fx-rate-pipeline.excalidraw](./docs/fx-rate-pipeline.excalidraw) (open in [Excalidraw](https://excalidraw.com)).
 
 ```mermaid
 flowchart LR
@@ -281,6 +299,8 @@ flowchart LR
   F -->|No| E[503 / error envelope]
 ```
 
+
+
 ---
 
 ## 9. Deployment considerations
@@ -290,19 +310,3 @@ flowchart LR
 - **Secrets**: JWT secret, DB password, mail credentials, FX API key via environment (validated at boot via Joi).
 - **Observability**: Extend with structured logging, metrics, and tracing; audit trail already supports compliance review.
 
----
-
-## 10. Related documentation
-
-| Document | Content |
-|----------|---------|
-| [README.md](./README.md) | Setup, env vars, endpoint tables, assumptions, security |
-| OpenAPI | `/api` when the server is running |
-
----
-
-## Revision history
-
-| Version | Notes |
-|---------|-------|
-| 1.0 | Initial system architecture aligned with current NestJS module layout |
