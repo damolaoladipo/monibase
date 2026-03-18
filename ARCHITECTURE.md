@@ -173,9 +173,9 @@ erDiagram
   }
 
   IdempotencyRecord {
-    uuid userId PK_FK
+    uuid userId PK, FK
     string key PK
-    jsonb response
+    json response
   }
 ```
 
