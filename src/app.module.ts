@@ -4,9 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { BullModule } from './modules/bull/bull.module';
 import { APP_GUARD } from '@nestjs/core';
-import { envValidationSchema } from './config/env.validation';
-import { getDbConfig, getTypeOrmOptionsFromDbConfig } from './config/db.config';
+import { envValidationSchema } from './configs/env.validation';
+import { getDbConfig, getTypeOrmOptionsFromDbConfig } from './configs/db.config';
 import { CommonModule } from './common/common.module';
+import { CacheModule } from './modules/cache/cache.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmailModule } from './modules/email/email.module';
 import { WalletModule } from './modules/wallet/wallet.module';
@@ -38,6 +39,7 @@ import { AppController } from './app.controller';
       inject: [ConfigService],
     }),
     CommonModule,
+    CacheModule,
     BullModule,
     ThrottlerModule.forRoot([
       {

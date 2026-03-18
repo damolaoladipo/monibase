@@ -33,12 +33,21 @@ export class User {
   @Column({ name: 'last_name', default: '' })
   lastName: string;
 
+  @Column({ name: 'phone_number', nullable: true })
+  phoneNumber: string | null;
+
+  @Column({ name: 'phone_code', nullable: true, length: 10 })
+  phoneCode: string | null;
+
   @Column({
     type: 'varchar',
     length: 20,
     default: UserRole.USER,
   })
   role: string;
+
+  @Column({ name: 'is_deactivated', default: false })
+  isDeactivated: boolean;
 
   @Column({ name: 'token_version', default: 0 })
   tokenVersion: number;

@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
-import { hasPermission } from '../../config/permissions.config';
-import type { PermissionAction } from '../../config/permissions.config';
+import { hasPermission } from '../../configs/permissions.config';
+import type { PermissionAction } from '../../configs/permissions.config';
 import { JwtPayload } from '../decorators/current-user.decorator';
 
 /**

@@ -33,6 +33,7 @@ export const envValidationSchema = Joi.object({
   STORAGE_LOCAL_PATH: Joi.string().optional(),
 
   RUN_SEED: Joi.string().valid('true', 'false').optional(),
+  ENABLE_SEEDING: Joi.string().valid('true', 'false').optional(),
   SUPERADMIN_EMAIL: Joi.string().email().optional(),
   SUPERADMIN_PASSWORD: Joi.string().min(8).optional(),
   SUPERADMIN_FIRST_NAME: Joi.string().optional(),

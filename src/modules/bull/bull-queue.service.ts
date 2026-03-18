@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Bull, { Queue, Job, DoneCallback } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
-import { getRedisConfig } from '../../config/redis.config';
+import { getRedisConfig } from '../../configs/redis.config';
 import {
   CreateQueueDTO,
   CreateWorkerDTO,

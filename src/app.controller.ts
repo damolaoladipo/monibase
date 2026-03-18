@@ -8,4 +8,14 @@ export class AppController {
   getRoot(): { status: string } {
     return { status: 'ok' };
   }
+
+  @Public()
+  @Get('health')
+  getHealth(): { name: string; version: string; status: string } {
+    return {
+      name: 'Monibase FX API',
+      version: '1.0.0',
+      status: 'ok',
+    };
+  }
 }

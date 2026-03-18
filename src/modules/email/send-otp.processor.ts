@@ -3,6 +3,7 @@ import { Job, DoneCallback } from 'bull';
 import { JobName } from './email-queue.constants';
 import { SendOtpPayload } from './email-job.service';
 import { EmailService } from './email.service';
+import { EmailViewService } from './email-view.service';
 
 const LOG_LABEL = 'email-processor';
 
@@ -14,7 +15,10 @@ const LOG_LABEL = 'email-processor';
 export class SendOtpProcessor {
   private readonly logger = new Logger(LOG_LABEL);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly emailView: EmailViewService,
+  ) {}
 
   async process(job: Job<SendOtpPayload>, done: DoneCallback): Promise<void> {
     if (job.name !== JobName.SendOtp) {
@@ -33,11 +37,14 @@ export class SendOtpProcessor {
     }
 
     try {
-      const result = await this.emailService.send(
-        email,
-        type === 'email_verification' ? 'Verify your email' : 'Your OTP',
-        `Your OTP is: ${otp}. Do not share it.`,
-      );
+      const subject = type === 'email_verification' ? 'Verify your email' : 'Your OTP';
+      const text = `Your OTP is: ${otp}. Do not share it.`;
+      const html =
+        this.emailView.render('verify-otp', {
+          code: otp,
+          expiry: '15 minutes',
+        }) ?? undefined;
+      const result = await this.emailService.send(email, subject, text, html);
 
       if (result.error) {
         this.logger.error(

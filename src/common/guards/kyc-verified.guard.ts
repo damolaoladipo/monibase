@@ -5,7 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { isAdminRole } from '../../config/roles.config';
+import { isAdminRole } from '../../configs/roles.config';
 import { KycService } from '../../modules/kyc/kyc.service';
 import { JwtPayload } from '../decorators/current-user.decorator';
 

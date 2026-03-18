@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { seedData } from '../../config/seeds/seeder';
+import seedData from '../../configs/seeds/seeder.seed';
+import { setSeedContext } from '../../configs/seeds/seed.context';
 import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
 
@@ -15,11 +16,12 @@ export class DatabaseSeederService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await seedData(
-      this.userRepository,
-      this.userService,
-      this.config,
-      this.logger,
-    );
+    setSeedContext({
+      userRepository: this.userRepository,
+      userService: this.userService,
+      config: this.config,
+      logger: this.logger,
+    });
+    await seedData();
   }
 }

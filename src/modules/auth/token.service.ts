@@ -60,4 +60,27 @@ export class TokenService {
       return null;
     }
   }
+
+  /**
+   * True if token is near expiry and should be refreshed (e.g. within 5 hours of expiry).
+   */
+  checkTokenValidity(token: string): boolean {
+    const decoded = this.jwtService.decode(token) as { exp?: number } | null;
+    if (!decoded?.exp) return false;
+    const timeLeft = decoded.exp * 1000 - Date.now();
+    const refreshThresholdMs = 5 * 60 * 60 * 1000; // 5 hours
+    return timeLeft <= refreshThresholdMs;
+  }
+
+  /**
+   * Verify current token and return new token if near expiry; otherwise return same token.
+   */
+  refreshToken(accessToken: string, payload: TokenSignPayload): { token: string } {
+    const needsRefresh = this.checkTokenValidity(accessToken);
+    if (needsRefresh) {
+      const newToken = this.sign(payload);
+      return { token: newToken };
+    }
+    return { token: accessToken };
+  }
 }

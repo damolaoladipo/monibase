@@ -6,6 +6,7 @@ import { Transaction } from './entities/transaction.entity';
 import { IdempotencyRecord } from './entities/idempotency-record.entity';
 import { KycModule } from '../kyc/kyc.module';
 import { FxModule } from '../fx/fx.module';
+import { UserModule } from '../user/user.module';
 import { WalletRepository } from './wallet.repository';
 import { WalletService } from './wallet.service';
 import { WalletController } from './wallet.controller';
@@ -16,6 +17,7 @@ import { TransactionsController } from './transactions.controller';
     TypeOrmModule.forFeature([WalletBalance, Transaction, IdempotencyRecord]),
     FxModule,
     KycModule,
+    UserModule,
   ],
   controllers: [WalletController, TransactionsController],
   providers: [WalletRepository, WalletService, KycVerifiedGuard],

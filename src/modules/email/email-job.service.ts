@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { BullQueueService } from '../bull/bull-queue.service';
 import { EMAIL_QUEUE_NAME, JobName } from './email-queue.constants';
 import { User } from '../user/entities/user.entity';
+import { EmailViewService } from './email-view.service';
 
 export interface SendOtpPayload {
   email: string;
@@ -22,6 +23,7 @@ export class EmailJobService {
   constructor(
     private readonly bullQueue: BullQueueService,
     private readonly config: ConfigService,
+    private readonly emailView: EmailViewService,
   ) {}
 
   /**
@@ -51,7 +53,12 @@ export class EmailJobService {
     const appUrl = this.config.get<string>('APP_URL', 'http://localhost:3000');
     const subject = `Welcome, ${user.firstName || 'User'}!`;
     const text = `Welcome. You can sign in at ${appUrl}.`;
-    const html = `<!DOCTYPE html><html><body><p>Welcome${user.firstName ? `, ${user.firstName}` : ''}.</p><p>You can sign in at <a href="${appUrl}">${appUrl}</a>.</p></body></html>`;
+    const html =
+      this.emailView.render('welcome', {
+        firstName: user.firstName || '',
+        appUrl,
+      }) ??
+      `<!DOCTYPE html><html><body><p>Welcome${user.firstName ? `, ${user.firstName}` : ''}.</p><p>You can sign in at <a href="${appUrl}">${appUrl}</a>.</p></body></html>`;
     return this.enqueueSendMail({
       to: user.email,
       subject,
@@ -65,7 +72,12 @@ export class EmailJobService {
     const appUrl = this.config.get<string>('APP_URL', 'http://localhost:3000');
     const subject = 'Reset your password';
     const text = `Hi ${user.firstName || 'User'}, we received a request to reset your password. If this wasn't you, ignore this email. Reset at ${appUrl}.`;
-    const html = `<!DOCTYPE html><html><body><p>Hi ${user.firstName || 'User'},</p><p>We received a request to reset your password.</p><p>If this wasn't you, ignore this email.</p><p><a href="${appUrl}">Reset password</a></p></body></html>`;
+    const html =
+      this.emailView.render('password-reset', {
+        firstName: user.firstName || 'User',
+        appUrl,
+      }) ??
+      `<!DOCTYPE html><html><body><p>Hi ${user.firstName || 'User'},</p><p>We received a request to reset your password.</p><p>If this wasn't you, ignore this email.</p><p><a href="${appUrl}">Reset password</a></p></body></html>`;
     return this.enqueueSendMail({
       to: user.email,
       subject,
@@ -78,10 +90,15 @@ export class EmailJobService {
   async enqueuePasswordChangeNotification(user: User): Promise<{ jobId: string }> {
     const subject = 'Your password has been changed';
     const text = `Hi ${user.firstName || 'User'}, this confirms your password was changed. If this wasn't you, contact support.`;
+    const html =
+      this.emailView.render('password-changed', {
+        firstName: user.firstName || 'User',
+      }) ?? undefined;
     return this.enqueueSendMail({
       to: user.email,
       subject,
       text,
+      html,
     });
   }
 }

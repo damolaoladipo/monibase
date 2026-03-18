@@ -54,6 +54,12 @@ export class Kyc {
   @Column({ name: 'id_number', type: 'varchar', nullable: true })
   idNumber: string | null;
 
+  @Column({ name: 'id_document_key', type: 'varchar', length: 512, nullable: true })
+  idDocumentKey: string | null;
+
+  @Column({ name: 'proof_of_address_key', type: 'varchar', length: 512, nullable: true })
+  proofOfAddressKey: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

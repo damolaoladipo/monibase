@@ -12,6 +12,9 @@ export enum TransactionType {
   FUND = 'fund',
   CONVERSION = 'conversion',
   TRADE = 'trade',
+  TRANSFER_OUT = 'transfer_out',
+  TRANSFER_IN = 'transfer_in',
+  TRANSFER = 'transfer',
 }
 
 export enum TransactionStatus {

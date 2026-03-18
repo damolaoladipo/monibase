@@ -1,19 +1,28 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { TransactionStatus, TransactionType } from './entities/transaction.entity';
 import { WalletRepository } from './wallet.repository';
 import { FxRatesService } from '../fx/fx-rates.service';
+import { UserService } from '../user/user.service';
 import { isSupportedCurrency } from '../../common/constants/currencies';
 import { validateTradePair } from './dto/trade.dto';
+import { AuditLoggerService } from '../../common/services/audit-logger.service';
+import { TransferDto } from './dto/transfer.dto';
 
 @Injectable()
 export class WalletService {
   constructor(
     private readonly walletRepo: WalletRepository,
     private readonly fxRatesService: FxRatesService,
+    private readonly userService: UserService,
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async getBalances(userId: string): Promise<{ currencyCode: string; amount: string }[]> {
-    const balances = await this.walletRepo.getBalances(userId);
+    let balances = await this.walletRepo.getBalances(userId);
+    if (balances.length === 0) {
+      await this.walletRepo.ensureDefaultWallet(userId);
+      balances = await this.walletRepo.getBalances(userId);
+    }
     return balances.map((b) => ({ currencyCode: b.currencyCode, amount: b.amount }));
   }
 
@@ -60,6 +69,7 @@ export class WalletService {
       return response;
     });
 
+    this.audit.log({ userId, action: 'wallet_fund', resource: 'wallet', outcome: 'success' });
     return result;
   }
 
@@ -122,6 +132,8 @@ export class WalletService {
       throw err;
     });
 
+    const action = type === TransactionType.CONVERSION ? 'wallet_convert' : 'wallet_trade';
+    this.audit.log({ userId, action, resource: 'wallet', outcome: 'success' });
     return result;
   }
 
@@ -150,6 +162,123 @@ export class WalletService {
     return this.convertOrTrade(userId, sourceCurrency, targetCurrency, amount, idempotencyKey, TransactionType.TRADE);
   }
 
+  async transfer(
+    userId: string,
+    dto: TransferDto,
+  ): Promise<{ balances: { currencyCode: string; amount: string }[]; transactionId: string }> {
+    const key = dto.idempotencyKey?.trim();
+    if (key) {
+      const existing = await this.walletRepo.findIdempotency(key, userId);
+      if (existing) {
+        return existing.response as { balances: { currencyCode: string; amount: string }[]; transactionId: string };
+      }
+    }
+
+    const fromCurrency = dto.fromCurrency;
+    if (!isSupportedCurrency(fromCurrency)) {
+      throw new BadRequestException('Unsupported fromCurrency');
+    }
+    const amountStr = Number(dto.amount).toFixed(4);
+
+    if (dto.toUserId) {
+      const toUser = await this.userService.findById(dto.toUserId);
+      if (!toUser) {
+        throw new NotFoundException('Recipient user not found');
+      }
+      if (dto.toUserId === userId) {
+        throw new BadRequestException('Cannot transfer to yourself; use same-user transfer without toUserId');
+      }
+      const currency = fromCurrency;
+      const dataSource = this.walletRepo.getDataSource();
+      const result = await dataSource.transaction(async (manager) => {
+        await this.walletRepo.debitBalance(userId, currency, amountStr, manager);
+        await this.walletRepo.creditBalance(dto.toUserId!, currency, amountStr, manager);
+        const txOut = await this.walletRepo.createTransaction(
+          {
+            userId,
+            type: TransactionType.TRANSFER_OUT,
+            amount: amountStr,
+            currencyCode: currency,
+            status: TransactionStatus.SUCCESS,
+            idempotencyKey: key || null,
+          },
+          manager,
+        );
+        await this.walletRepo.createTransaction(
+          {
+            userId: dto.toUserId!,
+            type: TransactionType.TRANSFER_IN,
+            amount: amountStr,
+            currencyCode: currency,
+            status: TransactionStatus.SUCCESS,
+            idempotencyKey: null,
+          },
+          manager,
+        );
+        const balances = await this.walletRepo.getBalances(userId, manager);
+        const response = {
+          balances: balances.map((b) => ({ currencyCode: b.currencyCode, amount: b.amount })),
+          transactionId: txOut.id,
+        };
+        if (key) {
+          await this.walletRepo.saveIdempotency(key, userId, response, manager);
+        }
+        return response;
+      }).catch((err) => {
+        if (err.message === 'Insufficient balance') {
+          throw new BadRequestException('Insufficient balance');
+        }
+        throw err;
+      });
+      this.audit.log({ userId, action: 'wallet_transfer', resource: 'wallet', outcome: 'success' });
+      return result;
+    }
+
+    const toCurrency = dto.toCurrency ?? fromCurrency;
+    if (!isSupportedCurrency(toCurrency)) {
+      throw new BadRequestException('Unsupported toCurrency');
+    }
+    if (fromCurrency === toCurrency) {
+      throw new BadRequestException('Same-user transfer requires different fromCurrency and toCurrency');
+    }
+    const rate = await this.fxRatesService.getRate(fromCurrency, toCurrency);
+    const targetAmount = (Number(dto.amount) * rate).toFixed(4);
+    const dataSource = this.walletRepo.getDataSource();
+    const result = await dataSource.transaction(async (manager) => {
+      await this.walletRepo.debitBalance(userId, fromCurrency, amountStr, manager);
+      await this.walletRepo.creditBalance(userId, toCurrency, targetAmount, manager);
+      const tx = await this.walletRepo.createTransaction(
+        {
+          userId,
+          type: TransactionType.TRANSFER,
+          amount: amountStr,
+          sourceCurrency: fromCurrency,
+          targetCurrency: toCurrency,
+          rate: rate.toFixed(8),
+          status: TransactionStatus.SUCCESS,
+          idempotencyKey: key || null,
+        },
+        manager,
+      );
+      const balances = await this.walletRepo.getBalances(userId, manager);
+      const response = {
+        balances: balances.map((b) => ({ currencyCode: b.currencyCode, amount: b.amount })),
+        transactionId: tx.id,
+      };
+      if (key) {
+        await this.walletRepo.saveIdempotency(key, userId, response, manager);
+      }
+      return response;
+    }).catch((err) => {
+      if (err.message === 'Insufficient balance') {
+        throw new BadRequestException('Insufficient balance');
+      }
+      throw err;
+    });
+    this.audit.log({ userId, action: 'wallet_transfer', resource: 'wallet', outcome: 'success' });
+    return result;
+  }
+
   async listTransactions(
     userId: string,
     page: number,
@@ -157,11 +286,13 @@ export class WalletService {
     type?: string,
     fromDate?: Date,
     toDate?: Date,
+    sort?: { field: string; order: 'ASC' | 'DESC' }[],
   ): Promise<{ items: Array<{ id: string; type: string; amount: string; currencyCode: string | null; sourceCurrency: string | null; targetCurrency: string | null; rate: string | null; status: string; createdAt: Date }>; total: number; page: number; limit: number }> {
     const { items, total } = await this.walletRepo.listTransactions({
       userId,
       page,
       limit,
+      sort,
       type,
       fromDate,
       toDate,

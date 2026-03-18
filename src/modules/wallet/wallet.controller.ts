@@ -7,6 +7,7 @@ import { KycVerifiedGuard } from '../../common/guards/kyc-verified.guard';
 import { ConvertDto } from './dto/convert.dto';
 import { FundWalletDto } from './dto/fund-wallet.dto';
 import { TradeDto } from './dto/trade.dto';
+import { TransferDto } from './dto/transfer.dto';
 import { WalletService } from './wallet.service';
 
 @ApiTags('wallet')
@@ -55,4 +56,9 @@ export class WalletController {
     );
   }
 
+  @Post('transfer')
+  @ApiOperation({ summary: 'Transfer: same-user (fromCurrency/toCurrency) or P2P (toUserId, same currency)' })
+  async transfer(@CurrentUser() user: JwtPayload, @Body() dto: TransferDto) {
+    return this.walletService.transfer(user.id, dto);
+  }
 }

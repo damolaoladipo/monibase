@@ -1,13 +1,24 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from './user.repository';
 import { User } from './entities/user.entity';
 import { UserRole } from './entities/user.entity';
 import { IResult } from '../../common/types/result.interface';
-import { isAdminRole } from '../../config/roles.config';
+import { isAdminRole } from '../../configs/roles.config';
+import { RedisService } from '../cache/redis.service';
+import { UserMapper } from './user.mapper';
+import { UserProfileDto } from './dto/user-profile.dto';
+import { UserListDto } from './dto/user-list.dto';
 
 const SALT_ROUNDS = 10;
+const PROFILE_CACHE_TTL = 300;   // 5 min (api pattern)
+const LIST_CACHE_TTL = 180;      // 3 min (api pattern)
 
 export interface BulkUserInput {
   email: string;
@@ -18,10 +29,42 @@ export interface BulkUserInput {
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly redis: RedisService,
+  ) {}
 
   async findById(id: string): Promise<User | null> {
     return this.userRepository.findById(id);
+  }
+
+  /**
+   * Get profile for current user with cache (api GET /user pattern). TTL 5 min.
+   */
+  async getProfileWithCache(userId: string): Promise<UserProfileDto | null> {
+    const cacheKey = `user:profile:${userId}`;
+    const cached = await this.redis.get<UserProfileDto>(cacheKey);
+    if (cached) return cached;
+    const user = await this.userRepository.findById(userId);
+    if (!user) return null;
+    const profile = UserMapper.toProfile(user);
+    await this.redis.set(cacheKey, profile, PROFILE_CACHE_TTL);
+    return profile;
+  }
+
+  /**
+   * Deactivate the current user (api DELETE /user/deactivate). Invalidates profile cache.
+   */
+  async deactivate(userId: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.isDeactivated) {
+      throw new BadRequestException('Account is already deactivated');
+    }
+    await this.userRepository.update(userId, { isDeactivated: true });
+    await this.redis.del(`user:profile:${userId}`);
   }
 
   async findByEmail(email: string, withPassword = false): Promise<User | null> {
@@ -118,5 +161,45 @@ export class UserService {
 
   async update(id: string, data: Partial<User>): Promise<User> {
     return this.userRepository.update(id, data);
+  }
+
+  async findAllPaginated(opts: {
+    page: number;
+    limit: number;
+    sort?: { field: string; order: 'ASC' | 'DESC' };
+    role?: string;
+    includeDeactivated?: boolean;
+  }): Promise<{ items: User[]; total: number }> {
+    return this.userRepository.findAllPaginated(opts);
+  }
+
+  /**
+   * List users with optional cache (api GET /users pattern). Admin only.
+   */
+  async findAllPaginatedWithCache(opts: {
+    page: number;
+    limit: number;
+    sort?: { field: string; order: 'ASC' | 'DESC' };
+    role?: string;
+    includeDeactivated?: boolean;
+  }): Promise<{ items: UserListDto[]; total: number; page: number; limit: number }> {
+    const cacheKey = `users:list:${JSON.stringify(opts)}`;
+    const cached = await this.redis.get<{ items: UserListDto[]; total: number }>(cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        page: opts.page,
+        limit: opts.limit,
+      };
+    }
+    const { items, total } = await this.userRepository.findAllPaginated(opts);
+    const listItems = items.map((u) => UserMapper.toList(u));
+    await this.redis.set(cacheKey, { items: listItems, total }, LIST_CACHE_TTL);
+    return {
+      items: listItems,
+      total,
+      page: opts.page,
+      limit: opts.limit,
+    };
   }
 }

@@ -3,8 +3,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { RequirePermissionsGuard } from '../../common/guards/require-permissions.guard';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { Permission } from '../../config/permissions.config';
-import { ADMIN_ROLES } from '../../config/roles.config';
+import { Permission } from '../../configs/permissions.config';
+import { ADMIN_ROLES } from '../../configs/roles.config';
 import { KycService } from './kyc.service';
 import { ReviewKycDto } from './dto/review-kyc.dto';
 

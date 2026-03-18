@@ -36,17 +36,18 @@ Backend for an FX Trading App: users can register, verify email, fund wallets, a
 
 ## Key assumptions
 
-- **Wallet**: One wallet per user; balances per currency (NGN, USD, EUR, GBP). Balance rows are created on first fund (no pre-created zero balances on verification).
+- **Wallet**: One wallet per user; balances per currency (NGN, USD, EUR, GBP). Each user has a wallet with at least NGN 0 after first GET /wallet (initial balance created on first balance request). Additional balances (e.g. USD) are created on first fund or convert/trade.
 - **FX**: Rates from external API (e.g. exchangerate-api.com), cached in-memory with TTL (configurable). On API failure, stale cache is used if available; otherwise request fails (503).
-- **Idempotency**: Fund, convert, and trade accept an optional idempotency key (body/header). Duplicate keys return the stored response.
+- **Idempotency**: Fund, convert, trade, and transfer accept an optional idempotency key (body). Duplicate keys return the stored response.
 - **Gating**: Only email-verified users can access wallet and transactions. Only KYC-verified users (or **admin**) can use convert/trade; **admin does not need KYC**.
-- **KYC**: Manual or automated review; status pending | verified | rejected. No full KYC payloads in logs; PII not exposed beyond status to clients.
+- **KYC**: Manual review; status pending | verified | rejected. Document upload (ID, proof of address) is stored in local/S3; storage key is saved on the KYC record. Retention and review process are manual; document retention policy should be defined per compliance requirements.
+- **Transfer**: POST /wallet/transfer supports (1) same-user: fromCurrency and toCurrency (uses FX rate if different); (2) P2P: toUserId and fromCurrency (same currency only). Idempotency applies.
 
 ## Security
 
 - **HTTPS**: Use TLS in production. Do not send tokens or sensitive data over plain HTTP.
-- Rate limiting (Throttler) is applied globally. Auth and wallet write endpoints are subject to limits.
-- Audit logging: register, verify, login, logout (and optionally fund/convert/trade) are logged with userId, action, resource, outcome. No passwords or full tokens in logs.
+- **Rate limiting**: Stricter limits apply to sensitive paths; global limit applies to all. Auth routes (/api/v1/auth): 20 requests per 15 min per IP. High-value wallet routes (fund, trade, convert, transfer): 30 requests per hour per IP. Global: 1000 per 30 min per IP (see app.config).
+- **Audit logging**: Register, verify OTP, login, logout; KYC submit and review (verified/rejected); wallet fund, convert, trade, transfer. Logged fields: userId, action, resource, outcome. No passwords, full tokens, amounts, or PII in logs.
 
 ## Architectural decisions
 
@@ -57,19 +58,23 @@ Backend for an FX Trading App: users can register, verify email, fund wallets, a
 
 ## API overview
 
+All API routes are under the global prefix `/api/v1`.
+
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | /auth/register | Register, triggers OTP email |
 | POST | /auth/verify | Verify OTP, activate account |
 | POST | /auth/login | Login, returns JWT |
 | POST | /auth/logout | Invalidate token |
-| GET | /wallet | Balances (email-verified) |
+| GET | /wallet | Balances (email-verified); ensures initial NGN 0 if empty |
 | POST | /wallet/fund | Fund wallet |
 | POST | /wallet/convert | Convert currencies (KYC or admin) |
 | POST | /wallet/trade | Trade NGN with others (KYC or admin) |
+| POST | /wallet/transfer | Transfer: same-user (fromCurrency/toCurrency) or P2P (toUserId, same currency); idempotent |
 | GET | /fx/rates | Current FX rates (public) |
 | GET | /transactions | Transaction history (paginated) |
 | POST | /kyc/submit | Submit KYC |
 | GET | /kyc/status | KYC status |
+| POST | /kyc/documents | Upload KYC document (multipart: file, documentType=id or proof_of_address) |
 
 See Swagger UI at `/api` for full request/response shapes.

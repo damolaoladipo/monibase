@@ -5,10 +5,16 @@ import { WalletBalance } from './entities/wallet-balance.entity';
 import { Transaction } from './entities/transaction.entity';
 import { IdempotencyRecord } from './entities/idempotency-record.entity';
 
+export interface SortItem {
+  field: string;
+  order: 'ASC' | 'DESC';
+}
+
 export interface ListTransactionsOptions {
   userId: string;
   page?: number;
   limit?: number;
+  sort?: SortItem[];
   type?: string;
   fromDate?: Date;
   toDate?: Date;
@@ -32,6 +38,14 @@ export class WalletRepository {
       where: { userId },
       order: { currencyCode: 'ASC' },
     });
+  }
+
+  /** Ensure user has at least a default NGN wallet (0 balance) so "each user has a wallet". */
+  async ensureDefaultWallet(userId: string): Promise<void> {
+    const existing = await this.balanceRepo.findOne({ where: { userId, currencyCode: 'NGN' } });
+    if (existing) return;
+    const balance = this.balanceRepo.create({ userId, currencyCode: 'NGN', amount: '0.0000' });
+    await this.balanceRepo.save(balance);
   }
 
   async findBalance(userId: string, currencyCode: string, manager?: EntityManager): Promise<WalletBalance | null> {
@@ -71,6 +85,10 @@ export class WalletRepository {
     return manager.getRepository(WalletBalance).save(balance);
   }
 
+  async creditBalance(userId: string, currencyCode: string, amount: string, manager: EntityManager): Promise<WalletBalance> {
+    return this.createOrGetBalance(userId, currencyCode, amount, manager);
+  }
+
   async createTransaction(data: Partial<Transaction>, manager?: EntityManager): Promise<Transaction> {
     const repo = manager ? manager.getRepository(Transaction) : this.transactionRepo;
     const tx = repo.create(data);
@@ -107,12 +125,16 @@ export class WalletRepository {
       qb.andWhere('t.created_at <= :toDate', { toDate: opts.toDate });
     }
 
-    const [items, total] = await qb
-      .orderBy('t.created_at', 'DESC')
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+    if (opts.sort?.length) {
+      for (const s of opts.sort) {
+        const col = s.field === 'createdAt' ? 't.created_at' : `t.${s.field}`;
+        qb.addOrderBy(col, s.order);
+      }
+    } else {
+      qb.orderBy('t.created_at', 'DESC');
+    }
 
+    const [items, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return { items, total };
   }
 

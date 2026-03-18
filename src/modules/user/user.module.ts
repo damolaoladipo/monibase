@@ -3,10 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
+import { UserController } from './user.controller';
 import { DatabaseSeederService } from './database-seeder.service';
+import { CacheModule } from '../cache/cache.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [TypeOrmModule.forFeature([User]), CacheModule],
+  controllers: [UserController],
   providers: [UserRepository, UserService, DatabaseSeederService],
   exports: [UserService, UserRepository],
 })
